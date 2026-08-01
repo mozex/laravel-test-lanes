@@ -2,6 +2,15 @@
 
 All notable changes to `laravel-test-lanes` will be documented in this file.
 
+## 1.1.0 - 2026-08-01
+
+### What's Changed
+
+* The package is now a drop-in: its service provider registers the lane resolver on its own whenever tests run under `APP_ENV=testing` (Laravel's phpunit.xml default), so no `TestCase` changes are needed. Requiring the package is the opt-in. `TestLanes::register()` stays public as the manual fallback for suites running under a different environment name, and `TEST_LANES_ENABLED=false` still switches everything off.
+* The in-memory SQLite no-op answer is no longer memoized, so an app that boots on `:memory:` and later points its default connection at a real server claims a real lane instead of inheriting the no-op.
+
+**Full Changelog**: https://github.com/mozex/laravel-test-lanes/compare/1.0.0...1.1.0
+
 ## 1.0.0 - 2026-08-01
 
 ### What's Changed

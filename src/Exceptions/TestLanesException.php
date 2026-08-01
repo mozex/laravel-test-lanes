@@ -4,10 +4,41 @@ declare(strict_types=1);
 
 namespace Mozex\TestLanes\Exceptions;
 
+use PDOException;
 use RuntimeException;
 
 class TestLanesException extends RuntimeException
 {
+    /**
+     * @param  array<string, mixed>  $config
+     */
+    public static function holderConnectionFailed(string $connection, array $config, PDOException $previous): self
+    {
+        $host = (string) ($config['host'] ?? '127.0.0.1');
+        $port = (string) ($config['port'] ?? '');
+        $database = (string) ($config['database'] ?? '');
+
+        return new self(sprintf(
+            'Test lanes could not open its lock-holder connection to [%s:%s/%s] for the [%s] connection: %s. '
+            .'The holder is the package\'s own PDO handle, separate from Laravel\'s; check that the server is '
+            .'running, the credentials are right, and the base database exists.',
+            $host,
+            $port,
+            $database,
+            $connection,
+            $previous->getMessage(),
+        ), 0, $previous);
+    }
+
+    public static function invalidPoolSize(int $size): self
+    {
+        return new self(sprintf(
+            'The test-lanes pool size must be at least 1, but the configuration resolves to [%d]. '
+            .'Check TEST_LANES_POOL_SIZE and config/test-lanes.php.',
+            $size,
+        ));
+    }
+
     /**
      * @param  list<string>  $supported
      */

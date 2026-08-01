@@ -10,6 +10,7 @@ use Illuminate\Support\Facades\DB;
 use Mozex\TestLanes\Exceptions\TestLanesException;
 use Mozex\TestLanes\TestLanes;
 use PDO;
+use PDOException;
 
 /**
  * Lane databases are never dropped while runs come and go, because reusing a
@@ -44,7 +45,12 @@ class CleanupCommand extends Command
 
         $driver = (string) ($config['driver'] ?? '');
         $lock = TestLanes::lock($driver);
-        $holder = $lock->connect($config);
+
+        try {
+            $holder = $lock->connect($config);
+        } catch (PDOException $exception) {
+            throw TestLanesException::holderConnectionFailed($name, $config, $exception);
+        }
 
         $base = (string) ($config['database'] ?? '');
         $namespace = TestLanes::namespaceFor($base);

@@ -9,7 +9,10 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\ParallelTesting;
 use Mozex\TestLanes\Exceptions\TestLanesException;
 use Mozex\TestLanes\Locks\AdvisoryLock;
+use Mozex\TestLanes\Locks\MysqlAdvisoryLock;
+use Mozex\TestLanes\Locks\PgsqlAdvisoryLock;
 use PDO;
+use PDOException;
 
 /**
  * Gives every concurrently running test process its own set of databases.
@@ -69,9 +72,24 @@ class TestLanes
         }
 
         $connection = DB::connection();
-        $lock = self::lock($connection->getDriverName());
 
-        $holder = $lock->connect(self::connectionConfig());
+        // Laravel's parallel machinery leaves an in-memory SQLite suite
+        // alone, since every process already has a private database. Mirror
+        // that instead of failing the driver check: an empty token switches
+        // the machinery off for a suite the package has nothing to protect.
+        if ((string) $connection->getDatabaseName() === ':memory:') {
+            return self::$lane = '';
+        }
+
+        $lock = self::lock($connection->getDriverName());
+        $config = self::connectionConfig();
+
+        try {
+            $holder = $lock->connect($config);
+        } catch (PDOException $exception) {
+            throw TestLanesException::holderConnectionFailed(DB::getDefaultConnection(), $config, $exception);
+        }
+
         $namespace = self::namespaceFor((string) $connection->getDatabaseName());
         $pool = self::poolSize();
 
@@ -90,6 +108,10 @@ class TestLanes
      * Give the claimed lane back. Closing the holder connection is all it
      * takes: the server releases the advisory lock the moment the session
      * ends, exactly as it does when a run crashes.
+     *
+     * Meant for this package's own test suite. The token resolver stays
+     * registered, so the very next token resolution claims a lane again,
+     * possibly a different one.
      */
     public static function release(): void
     {
@@ -114,8 +136,15 @@ class TestLanes
      */
     public static function lock(string $driver): AdvisoryLock
     {
+        // The code fallback matters when the app cached its config before
+        // this package was installed: the merge never ran, and an empty map
+        // here would misreport every driver as unsupported.
         /** @var array<string, class-string<AdvisoryLock>> $locks */
-        $locks = Config::get('test-lanes.locks', []);
+        $locks = Config::get('test-lanes.locks', [
+            'pgsql' => PgsqlAdvisoryLock::class,
+            'mysql' => MysqlAdvisoryLock::class,
+            'mariadb' => MysqlAdvisoryLock::class,
+        ]);
 
         if (! isset($locks[$driver])) {
             throw TestLanesException::unsupportedDriver($driver, array_keys($locks));
@@ -126,7 +155,13 @@ class TestLanes
 
     public static function poolSize(): int
     {
-        return (int) Config::get('test-lanes.pool_size', 256);
+        $size = (int) Config::get('test-lanes.pool_size', 256);
+
+        if ($size < 1) {
+            throw TestLanesException::invalidPoolSize($size);
+        }
+
+        return $size;
     }
 
     /**

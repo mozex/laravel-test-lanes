@@ -144,11 +144,13 @@ For example: up to 3 concurrent 24-worker runs wants `max_connections` of at lea
 
 The lane claim scopes **databases** (and `Storage::fake()` roots). It cannot reach things your suite keys on a fixed path or on paratest's raw `TEST_TOKEN`, such as a hardcoded port or a shared temp file. Those still collide between concurrent runs and need their own per-run scoping.
 
-Three more things worth knowing:
+A few more things worth knowing:
 
 - The base test database must exist; it's where the lock is taken. It's the same database your serial runs used before this package, so in practice it already does.
 - The connection must use discrete `host`/`port`/`database` keys. A `DB_URL`-style connection is refused rather than guessed at.
 - PgBouncer in transaction-pooling mode silently breaks session advisory locks. Point your test connection at Postgres directly.
+- `test-lanes:cleanup` drops with `WITH (FORCE)` on Postgres, which needs PostgreSQL 13 or newer.
+- On MySQL, cleanup can only see databases the connecting user has privileges on. A locked-down user makes lane databases invisible to the command, and it reports nothing to drop.
 
 ## Resources
 

@@ -154,6 +154,7 @@ A few more things worth knowing:
 - `test-lanes:cleanup` drops with `WITH (FORCE)` on Postgres, which needs PostgreSQL 13 or newer.
 - On MySQL, cleanup can only see databases the connecting user has privileges on. A locked-down user makes lane databases invisible to the command, and it reports nothing to drop.
 - Laravel's `--recreate-databases` and `--drop-databases` flags act on the worker-index databases, not on lanes: the parallel runner's process hooks re-register the token resolver with the raw worker index. Drop lane databases with `test-lanes:cleanup` instead.
+- The same worker-index mismatch leaves compiled Blade views behind under `--parallel`: the runner cleans view directories named for the raw worker index while tests compile into lane-named ones. Nothing breaks, but the lane view directories linger and grow quietly until something clears them.
 
 ## Resources
 

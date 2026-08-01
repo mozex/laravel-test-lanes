@@ -50,3 +50,4 @@ Each worker holds two connections: Laravel's own plus the lane's lock holder. Si
 - The base test database must exist; the lock is taken on it.
 - The connection needs discrete `host`/`port`/`database` keys. A `DB_URL`-style connection is refused.
 - PgBouncer in transaction-pooling mode breaks session advisory locks; point the test connection at Postgres directly.
+- Under `--parallel`, compiled Blade view directories named for lanes linger: the runner only cleans the ones named for the raw worker index. Harmless disk growth, safe to delete when tearing a checkout down.

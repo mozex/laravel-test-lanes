@@ -142,6 +142,12 @@ it('registers a resolver that routes serial runs through the parallel machinery'
     skipUnlessServerAvailable($driver);
     useServerConnection($driver);
 
+    // Auto-registration already resolved a token during app boot, while the
+    // default connection was still :memory:, and ParallelTesting memoizes
+    // it. Start from a fresh instance so this test observes a real claim.
+    app()->forgetInstance(Illuminate\Testing\ParallelTesting::class);
+    ParallelTesting::clearResolvedInstances();
+
     // The load-bearing behavior is that the setUpTestCase callbacks (the
     // gate every parallel-database action runs behind) actually fire with
     // the lane as the token, in a run that never passed --parallel.
@@ -190,7 +196,19 @@ it('falls back to the built-in lock map when the config never loaded', function 
         ->and(TestLanes::lock('mariadb'))->toBeInstanceOf(MysqlAdvisoryLock::class);
 });
 
+it('auto-registers when the suite boots the application', function (): void {
+    // No call to register() anywhere in this test: the service provider did
+    // the wiring during app boot. The default connection is sqlite :memory:,
+    // so the resolver answers with the empty no-op lane; a run without the
+    // resolver would report false here, never a string.
+    expect($_SERVER['LARAVEL_PARALLEL_TESTING'] ?? null)->toBe(1)
+        ->and(ParallelTesting::token())->toBe('');
+});
+
 it('does nothing when disabled', function (): void {
+    // The provider already registered during boot (enabled defaults to true),
+    // so clear its trace first; the guard must then keep it cleared.
+    unset($_SERVER['LARAVEL_PARALLEL_TESTING']);
     config()->set('test-lanes.enabled', false);
 
     TestLanes::register();

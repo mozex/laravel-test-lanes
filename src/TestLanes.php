@@ -47,9 +47,12 @@ class TestLanes
      * machinery entirely and every serial process shares the one base
      * database.
      *
-     * ParallelTesting is a facade, so this needs a booted container. Call it
-     * from your TestCase's createApplication(), the first point where one
-     * exists that still precedes the parallel-database callbacks.
+     * The service provider calls this automatically when tests run under
+     * APP_ENV=testing, so most suites never touch it. Call it manually from
+     * your base TestCase's createApplication() when your suite runs under
+     * another environment name. ParallelTesting is a facade, so it needs a
+     * booted container either way; createApplication() is the first point
+     * where one exists that still precedes the parallel-database callbacks.
      */
     public static function register(): void
     {
@@ -77,8 +80,11 @@ class TestLanes
         // alone, since every process already has a private database. Mirror
         // that instead of failing the driver check: an empty token switches
         // the machinery off for a suite the package has nothing to protect.
+        // Deliberately NOT memoized: a test that boots on :memory: and then
+        // points the default connection at a real server must claim a real
+        // lane on its next call, not inherit the no-op answer.
         if ((string) $connection->getDatabaseName() === ':memory:') {
-            return self::$lane = '';
+            return '';
         }
 
         $lock = self::lock($connection->getDriverName());

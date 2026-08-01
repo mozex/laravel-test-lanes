@@ -21,6 +21,22 @@ class TestLanesServiceProvider extends PackageServiceProvider
     }
 
     /**
+     * The package is a drop-in: requiring it is the opt-in, so the provider
+     * wires the lanes itself and no TestCase changes are needed. Providers
+     * boot inside createApplication(), which runs before Laravel's parallel
+     * testing callbacks read the token, so the timing always holds. The gate
+     * is runningUnitTests() (APP_ENV=testing, Laravel's phpunit.xml default);
+     * suites running under another environment name call TestLanes::register()
+     * from their base TestCase's createApplication() instead.
+     */
+    public function packageBooted(): void
+    {
+        if ($this->app->runningUnitTests()) {
+            TestLanes::register();
+        }
+    }
+
+    /**
      * Laravel merges a published config with a shallow array_merge, so a
      * user's "locks" block would replace ours wholesale and silently lose
      * drivers we add later. Re-merge here after that shallow pass: nested

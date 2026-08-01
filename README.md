@@ -128,6 +128,8 @@ php artisan test-lanes:cleanup
 
 The command only drops databases whose lane lock is currently free. A lane claimed by a live test run is kept and reported, so running cleanup mid-test is safe. Pass `--connection=name` to clean a connection other than the default.
 
+If you work on per-branch git worktrees through [mozex/laravel-worktree](https://github.com/mozex/laravel-worktree), there's nothing to run there: its `worktree:teardown` drops a worktree's lane databases on its own.
+
 ## Sizing the Connection Budget
 
 Each test worker holds two database connections: Laravel's own (to the lane database) and the lock holder (to the base database). A 24-worker run costs about 50 connections, and two of those at once will blow through a stock Postgres `max_connections = 100`.

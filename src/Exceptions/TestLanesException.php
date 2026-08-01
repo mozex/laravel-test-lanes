@@ -21,7 +21,8 @@ class TestLanesException extends RuntimeException
         return new self(sprintf(
             'Test lanes could not open its lock-holder connection to [%s:%s/%s] for the [%s] connection: %s. '
             .'The holder is the package\'s own PDO handle, separate from Laravel\'s; check that the server is '
-            .'running, the credentials are right, and the base database exists.',
+            .'running, the credentials are right, and the base database exists. If this suite does not need '
+            .'a database at all, set TEST_LANES_ENABLED=false to switch lanes off.',
             $host,
             $port,
             $database,
@@ -46,7 +47,8 @@ class TestLanesException extends RuntimeException
     {
         return new self(sprintf(
             'Test lanes have no lock primitive for the [%s] driver, so concurrent runs would share databases. '
-            .'Use one of [%s], or map your own AdvisoryLock class under "locks" in config/test-lanes.php.',
+            .'Use one of [%s], map your own AdvisoryLock class under "locks" in config/test-lanes.php, '
+            .'or set TEST_LANES_ENABLED=false to switch lanes off.',
             $driver,
             implode(', ', $supported),
         ));

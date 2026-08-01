@@ -18,22 +18,8 @@ This project has `mozex/laravel-test-lanes` installed. Every test process claims
 
 - **Fan out freely.** Concurrent test runs are safe at full `--parallel` speed. Do not reintroduce advice to serialize runs, reduce worker counts, or assign databases manually; the lanes make that obsolete.
 - **Never hardcode a parallel token or database suffix.** The lane is claimed at runtime; anything keyed on paratest's raw `TEST_TOKEN` or a fixed path is still shared between runs and needs its own scoping.
-- **Registration lives in `TestCase::createApplication()`**, after `parent::createApplication()`:
-
-```php
-public function createApplication()
-{
-    $app = parent::createApplication();
-
-    TestLanes::register();
-
-    return $app;
-}
-```
-
-`ParallelTesting` is a facade, so calling `TestLanes::register()` from `Pest.php` throws "A facade root has not been set". Do not move it there.
-
-- **Serial runs are covered on purpose.** `register()` forces `LARAVEL_PARALLEL_TESTING` so plain `php artisan test` gets a lane database too. Do not "clean up" that flag; without it every serial run shares the base database.
+- **The package registers itself; do not add wiring.** The service provider calls `TestLanes::register()` during app boot whenever `APP_ENV=testing` (Laravel's phpunit.xml default). Only a suite running under a different environment name needs the manual form, in the base `TestCase`'s `createApplication()` after `parent::createApplication()` — never in `Pest.php`, where no container exists yet and the `ParallelTesting` facade throws "A facade root has not been set".
+- **Serial runs are covered on purpose.** Registration forces `LARAVEL_PARALLEL_TESTING` so plain `php artisan test` gets a lane database too. Do not "clean up" that flag; without it every serial run shares the base database.
 - **Lane databases are meant to persist between runs.** Reuse skips the migration cost, so do not drop them as routine hygiene.
 - **Never recommend `--recreate-databases` or `--drop-databases` for lane databases.** Laravel's parallel runner re-registers the token resolver with the raw worker index inside its own process hooks, so those flags act on `{base}_test_{index}` databases no lane worker uses. `test-lanes:cleanup` is the way to drop lanes.
 

@@ -39,7 +39,9 @@ Install it as a dev dependency:
 composer require mozex/laravel-test-lanes --dev
 ```
 
-Then add one line to your base `TestCase`:
+That's the whole setup. The package wires itself when your tests run: its service provider registers the lane resolver during application boot, which always happens before Laravel's parallel-database machinery reads the token. Pest and PHPUnit alike, serial and `--parallel` alike.
+
+Auto-registration triggers under `APP_ENV=testing`, Laravel's default in `phpunit.xml`. If your suite runs under a different environment name, register by hand in your base `TestCase` instead:
 
 ```php
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
@@ -58,9 +60,7 @@ abstract class TestCase extends BaseTestCase
 }
 ```
 
-That's the whole setup. It works the same for Pest and PHPUnit, because both run through your base `TestCase`.
-
-The placement matters. `ParallelTesting` is a facade, so registering the resolver needs a booted container, and `createApplication()` is the first point where one exists that still runs before Laravel's parallel-database callbacks. Registering earlier (in `Pest.php`, for example) throws "A facade root has not been set".
+`createApplication()` is the right spot for the manual form: `ParallelTesting` is a facade, so it needs a booted container, and this is the first point where one exists that still runs before the parallel-database callbacks. Registering earlier (in `Pest.php`, for example) throws "A facade root has not been set".
 
 ## The Problem
 

@@ -4,7 +4,7 @@ Gives every concurrently running test process its own set of test databases. A p
 
 ## Architecture
 
-- `src/TestLanes.php` - the whole claim lifecycle as a static class (state is inherently process-global: one lane, one holder connection per process). `register()` is the only wiring users call; `claim()` is invoked lazily through the token resolver.
+- `src/TestLanes.php` - the whole claim lifecycle as a static class (state is inherently process-global: one lane, one holder connection per process). The provider calls `register()` automatically when tests run; `claim()` is invoked lazily through the token resolver.
 - `src/Locks/` - `AdvisoryLock` interface (`connect`, `tryAcquire`, `release`) with Postgres (`pg_try_advisory_lock`) and MySQL (`GET_LOCK`) implementations. MariaDB reuses the MySQL class. The config `locks` map is the extension point for new drivers.
 - `src/Commands/CleanupCommand.php` - drops `{base}_test_lane{n}` databases whose lock is free; claimed lanes are skipped, so it is safe mid-run.
 - `src/TestLanesServiceProvider.php` - spatie package-tools plus a deep config re-merge (Laravel's publish merge is shallow; without the re-merge a published config would freeze the `locks` map and lose drivers we add later).
@@ -15,7 +15,8 @@ Gives every concurrently running test process its own set of test databases. A p
 - **Advisory lock, not a lock file.** Atomic under any race, and the server frees it when the holding connection dies, so a killed run needs no reaper.
 - **The holder is a raw PDO handle** bypassing Laravel's connection manager on purpose: Laravel may reconnect or purge its own connections mid-run, which would drop the lease.
 - **`crc32(database) & 0x7FFFFFFF`** namespaces locks per base database. The mask is load-bearing: crc32 is unsigned 32-bit, Postgres advisory keys are signed int4, real database names overflow (found by a failing run, not by reasoning).
-- **`register()` must run in `TestCase::createApplication()`.** ParallelTesting is a facade; Pest.php has no container yet. This is documented in the README because getting it wrong throws "A facade root has not been set".
+- **The package is a drop-in: the provider auto-registers.** `packageBooted()` calls `register()` when `runningUnitTests()` is true (APP_ENV=testing). Requiring the package IS the opt-in; the activation mechanism (provider vs a TestCase line) reaches every developer through the same `composer install` either way, so explicit wiring bought nothing. Providers boot inside `createApplication()`, before the parallel-testing callbacks read the token, so the timing always holds. `register()` stays public and idempotent as the manual fallback for suites running under a non-`testing` environment name; the manual form must live in `TestCase::createApplication()` (ParallelTesting is a facade; Pest.php has no container yet and throws "A facade root has not been set").
+- **The `:memory:` bail in `claim()` is deliberately NOT memoized.** With auto-registration, testbench resolves a token during app boot while the default connection is still sqlite `:memory:`; memoizing the empty lane there would poison every later claim in the same process (found by 13 failing tests, not by reasoning). `ParallelTesting` memoizes the token per app instance anyway, so the un-memoized bail costs one config lookup per boot.
 - **Unsupported drivers and DB_URL connections fail loudly.** A silent constant fallback would quietly reinstate the exact collision the package exists to prevent.
 
 ## Testing

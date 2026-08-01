@@ -1,0 +1,8 @@
+{
+    "$schema": "https://context7.com/schema/context7.json",
+    "url": "https://context7.com/mozex/laravel-test-lanes",
+    "public_key": "pk_2dXAZIEpHP6qQeGGTuyQt",
+    "projectTitle": "Laravel Test Lanes",
+    "description": "Give every concurrent Laravel test run its own databases by claiming a machine-unique lane for each process",
+    "folders": []
+}

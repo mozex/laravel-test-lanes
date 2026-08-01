@@ -116,7 +116,7 @@ return [
 
 Set `TEST_LANES_ENABLED=false` to switch the package off entirely; runs then behave exactly as they would without it. The pool costs nothing until processes actually claim lanes, so there's no reason to shrink it.
 
-To support another database driver, implement the `Mozex\TestLanes\Locks\AdvisoryLock` interface (three methods: `connect`, `tryAcquire`, `release`) and map it in `locks`.
+To support another database driver, implement the `Mozex\TestLanes\Locks\AdvisoryLock` interface (three methods: `connect`, `tryAcquire`, `release`) and map it in `locks`. That extends lane claiming; `test-lanes:cleanup` only knows how to list and drop databases on Postgres, MySQL, and MariaDB.
 
 ## Cleaning Up Lane Databases
 
@@ -151,6 +151,7 @@ A few more things worth knowing:
 - PgBouncer in transaction-pooling mode silently breaks session advisory locks. Point your test connection at Postgres directly.
 - `test-lanes:cleanup` drops with `WITH (FORCE)` on Postgres, which needs PostgreSQL 13 or newer.
 - On MySQL, cleanup can only see databases the connecting user has privileges on. A locked-down user makes lane databases invisible to the command, and it reports nothing to drop.
+- Laravel's `--recreate-databases` and `--drop-databases` flags act on the worker-index databases, not on lanes: the parallel runner's process hooks re-register the token resolver with the raw worker index. Drop lane databases with `test-lanes:cleanup` instead.
 
 ## Resources
 

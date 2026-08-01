@@ -35,6 +35,7 @@ public function createApplication()
 
 - **Serial runs are covered on purpose.** `register()` forces `LARAVEL_PARALLEL_TESTING` so plain `php artisan test` gets a lane database too. Do not "clean up" that flag; without it every serial run shares the base database.
 - **Lane databases are meant to persist between runs.** Reuse skips the migration cost, so do not drop them as routine hygiene.
+- **Never recommend `--recreate-databases` or `--drop-databases` for lane databases.** Laravel's parallel runner re-registers the token resolver with the raw worker index inside its own process hooks, so those flags act on `{base}_test_{index}` databases no lane worker uses. `test-lanes:cleanup` is the way to drop lanes.
 
 ## Cleaning up lane databases
 

@@ -27,7 +27,9 @@ return [
      * The advisory-lock implementation per database driver. A driver
      * missing from this map fails loudly rather than silently sharing
      * databases. Map your own Mozex\TestLanes\Locks\AdvisoryLock
-     * implementation here to teach the package another driver.
+     * implementation here to teach lane claiming another driver. The
+     * test-lanes:cleanup command is separate: it knows the pgsql, mysql,
+     * and mariadb catalogs only.
      */
     'locks' => [
         'pgsql' => PgsqlAdvisoryLock::class,

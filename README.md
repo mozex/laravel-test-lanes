@@ -1,7 +1,7 @@
 # Laravel Test Lanes
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/mozex/laravel-test-lanes.svg?style=flat-square)](https://packagist.org/packages/mozex/laravel-test-lanes)
-[![Tests](https://img.shields.io/github/actions/workflow/status/mozex/laravel-test-lanes/checks.yml?branch=main&label=tests&style=flat-square)](https://github.com/mozex/laravel-test-lanes/actions/workflows/checks.yml)
+[![GitHub Checks Workflow Status](https://img.shields.io/github/actions/workflow/status/mozex/laravel-test-lanes/checks.yml?branch=main&label=checks&style=flat-square)](https://github.com/mozex/laravel-test-lanes/actions/workflows/checks.yml)
 [![Docs](https://img.shields.io/badge/docs-mozex.dev-10B981?style=flat-square)](https://mozex.dev/docs/laravel-test-lanes/v1)
 [![License](https://img.shields.io/packagist/l/mozex/laravel-test-lanes?style=flat-square)](https://packagist.org/packages/mozex/laravel-test-lanes)
 [![Total Downloads](https://img.shields.io/packagist/dt/mozex/laravel-test-lanes.svg?style=flat-square)](https://packagist.org/packages/mozex/laravel-test-lanes)

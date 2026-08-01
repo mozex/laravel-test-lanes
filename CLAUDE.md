@@ -2,6 +2,26 @@
 
 Gives every concurrently running test process its own set of test databases. A process claims a "lane" (the lowest free slot in a pool of 256) by taking an advisory lock on the project's database server, and that lane becomes Laravel's parallel-testing token, so databases are named `{base}_test_lane{n}` instead of the collision-prone `{base}_test_{worker-index}`. Serial runs are routed through the same machinery by forcing `LARAVEL_PARALLEL_TESTING`, so they stop sharing the one base database too.
 
+## Commands
+
+```bash
+# Run all checks (formatting + static analysis + type coverage + tests)
+composer test
+
+# Individual checks
+composer lint                  # Fix code formatting (Pint)
+composer test:lint             # Check code formatting without fixing
+composer test:types            # PHPStan static analysis (level 6)
+composer test:type-coverage    # Pest type coverage (minimum 100%)
+composer test:unit             # Run Pest tests
+
+# Run a single test file
+./vendor/bin/pest tests/LocksTest.php
+
+# Run a single test by name
+./vendor/bin/pest --filter="test name here"
+```
+
 ## Architecture
 
 - `src/TestLanes.php` - the whole claim lifecycle as a static class (state is inherently process-global: one lane, one holder connection per process). The provider calls `register()` automatically when tests run; `claim()` is invoked lazily through the token resolver.
@@ -21,7 +41,6 @@ Gives every concurrently running test process its own set of test databases. A p
 
 ## Testing
 
-- `composer test` runs lint, PHPStan (level 6), 100% type coverage, and the Pest suite.
 - Lock tests run against real servers and skip when none answers. Defaults match the CI service containers (Postgres `postgres`/`postgres`, MySQL `root`/empty on 127.0.0.1). Override with the `TEST_LANES_PGSQL_*` / `TEST_LANES_MYSQL_*` env vars when a local server uses other credentials.
 - `tests/Fixtures/hold-lane.php` claims a lock from a separate OS process; `LocksTest` uses it to prove exclusion across processes and that killing the process frees the lane.
 - Run the suite serially. Lane-number assertions (`toBe('lane1')`) assume no concurrent claimant on the maintenance database's namespace.

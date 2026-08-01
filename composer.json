@@ -1,0 +1,86 @@
+{
+    "name": "mozex/laravel-test-lanes",
+    "description": "Give every concurrent Laravel test run its own databases by claiming a machine-unique lane for each process",
+    "keywords": [
+        "laravel",
+        "testing",
+        "parallel",
+        "pest",
+        "phpunit",
+        "paratest",
+        "database",
+        "isolation",
+        "mozex"
+    ],
+    "homepage": "https://github.com/mozex/laravel-test-lanes",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "Mozex",
+            "email": "hello@mozex.dev",
+            "homepage": "https://mozex.dev",
+            "role": "Developer"
+        }
+    ],
+    "require": {
+        "php": "^8.2.0",
+        "ext-pdo": "*",
+        "illuminate/console": "^11.0|^12.0|^13.0",
+        "illuminate/contracts": "^11.0|^12.0|^13.0",
+        "illuminate/database": "^11.0|^12.0|^13.0",
+        "illuminate/support": "^11.0|^12.0|^13.0",
+        "illuminate/testing": "^11.0|^12.0|^13.0",
+        "spatie/laravel-package-tools": "^1.16"
+    },
+    "require-dev": {
+        "larastan/larastan": "^3.0",
+        "laravel/pint": "^1.14",
+        "orchestra/testbench": "^9.0|^10.0|^11.0",
+        "pestphp/pest": "^3.8.2|^4.0.0",
+        "pestphp/pest-plugin-laravel": "^3.2|^4.0.0",
+        "pestphp/pest-plugin-type-coverage": "^3.5|^4.0.0",
+        "phpstan/extension-installer": "^1.4",
+        "phpstan/phpstan-deprecation-rules": "^2.0",
+        "phpstan/phpstan-phpunit": "^2.0"
+    },
+    "autoload": {
+        "psr-4": {
+            "Mozex\\TestLanes\\": "src/"
+        }
+    },
+    "autoload-dev": {
+        "psr-4": {
+            "Mozex\\TestLanes\\Tests\\": "tests/"
+        }
+    },
+    "scripts": {
+        "lint": "pint",
+        "test:lint": "pint --test",
+        "test:types": "phpstan analyse --ansi",
+        "test:type-coverage": "pest --type-coverage --min=100",
+        "test:unit": "pest --colors=always",
+        "test": [
+            "@test:lint",
+            "@test:types",
+            "@test:type-coverage",
+            "@test:unit"
+        ]
+    },
+    "config": {
+        "sort-packages": true,
+        "preferred-install": "dist",
+        "allow-plugins": {
+            "pestphp/pest-plugin": true,
+            "phpstan/extension-installer": true
+        }
+    },
+    "extra": {
+        "laravel": {
+            "providers": [
+                "Mozex\\TestLanes\\TestLanesServiceProvider"
+            ]
+        }
+    },
+    "minimum-stability": "dev",
+    "prefer-stable": true
+}

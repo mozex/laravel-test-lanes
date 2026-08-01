@@ -1,0 +1,105 @@
+name: Checks
+
+on:
+  push:
+    branches: [main, '*.x']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    name: Lint
+    uses: mozex/reusable-workflows/.github/workflows/code-styling.yml@c2b1a0f19759007a1703b936bd0ce68cac90533b # main
+    with:
+      php_version: '8.5'
+      test_mode: true
+
+  types:
+    name: Types
+    uses: mozex/reusable-workflows/.github/workflows/code-analysis.yml@c2b1a0f19759007a1703b936bd0ce68cac90533b # main
+    with:
+      php_version: '8.5'
+
+  type-coverage:
+    name: Type Coverage
+    uses: mozex/reusable-workflows/.github/workflows/type-coverage.yml@c2b1a0f19759007a1703b936bd0ce68cac90533b # main
+    with:
+      php_version: '8.5'
+      phpunit_config_file: 'phpunit.xml.dist'
+      min: 100
+
+  tests:
+    name: Tests P${{ matrix.php }} - L${{ matrix.laravel }} - ${{ matrix.dependency-version }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: true
+      matrix:
+        php: [8.2, 8.3, 8.4, 8.5]
+        laravel: [13.*, 12.*, 11.*]
+        dependency-version: [prefer-lowest, prefer-stable]
+        include:
+          - laravel: "11.*"
+            testbench: "^9.2"
+            carbon: "^3.8.4"
+          - laravel: "12.*"
+            testbench: "10.*"
+            carbon: "^3.8.4"
+          - laravel: "13.*"
+            testbench: "^11.0"
+            carbon: "^3.8.4"
+        exclude:
+          - laravel: "13.*"
+            php: "8.2"
+
+    # Advisory locks are the package's core primitive, so the suite exercises
+    # them against real MySQL and Postgres servers instead of mocking them.
+    # The tests skip themselves when no server answers.
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ALLOW_EMPTY_PASSWORD: 'yes'
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping --silent"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        with:
+          persist-credentials: false
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@f3e473d116dcccaddc5834248c87452386958240 # v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: dom, mbstring, zip, pdo_mysql, pdo_pgsql, pdo_sqlite
+          coverage: none
+
+      - name: Require dependencies
+        run: composer require "laravel/framework:${{ matrix.laravel }}" "orchestra/testbench:${{ matrix.testbench }}" "nesbot/carbon:${{ matrix.carbon }}" --no-interaction --no-update
+
+      - name: Install dependencies
+        run: composer update --${{ matrix.dependency-version }} --prefer-dist --no-interaction --no-progress
+
+      - name: Tests
+        run: vendor/bin/pest --colors=always

@@ -2,6 +2,16 @@
 
 All notable changes to `laravel-test-lanes` will be documented in this file.
 
+## 1.1.1 - 2026-08-01
+
+### What's Changed
+
+* The lock-holder-connection and unsupported-driver errors now end by pointing at `TEST_LANES_ENABLED=false`, so a suite that never needed a database learns about the switch-off right where it fails.
+* Documented a known `--parallel` quirk in the README and the Boost skill: compiled Blade view directories named for lanes linger, because Laravel's runner only cleans the ones named for the raw worker index.
+* Declared `symfony/process` as a dev dependency and aligned the dependabot config, CI badge, and CLAUDE.md layout with the other mozex packages.
+
+**Full Changelog**: https://github.com/mozex/laravel-test-lanes/compare/1.1.0...1.1.1
+
 ## 1.1.0 - 2026-08-01
 
 ### What's Changed

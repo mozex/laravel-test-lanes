@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Mozex\TestLanes\Commands;
 
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Mozex\TestLanes\Exceptions\TestLanesException;
 use Mozex\TestLanes\TestLanes;
@@ -29,7 +30,7 @@ class CleanupCommand extends Command
         $name = is_string($this->option('connection')) ? $this->option('connection') : DB::getDefaultConnection();
 
         /** @var array<string, mixed>|null $config */
-        $config = config('database.connections.'.$name);
+        $config = Config::get('database.connections.'.$name);
 
         if (! is_array($config)) {
             $this->error("The [{$name}] connection is not configured.");

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Mozex\TestLanes;
 
+use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\ParallelTesting;
 use Mozex\TestLanes\Exceptions\TestLanesException;
@@ -49,7 +50,7 @@ class TestLanes
      */
     public static function register(): void
     {
-        if (config('test-lanes.enabled', true) === false) {
+        if (Config::get('test-lanes.enabled', true) === false) {
             return;
         }
 
@@ -114,7 +115,7 @@ class TestLanes
     public static function lock(string $driver): AdvisoryLock
     {
         /** @var array<string, class-string<AdvisoryLock>> $locks */
-        $locks = config('test-lanes.locks', []);
+        $locks = Config::get('test-lanes.locks', []);
 
         if (! isset($locks[$driver])) {
             throw TestLanesException::unsupportedDriver($driver, array_keys($locks));
@@ -125,7 +126,7 @@ class TestLanes
 
     public static function poolSize(): int
     {
-        return (int) config('test-lanes.pool_size', 256);
+        return (int) Config::get('test-lanes.pool_size', 256);
     }
 
     /**
@@ -136,7 +137,7 @@ class TestLanes
         $name = DB::getDefaultConnection();
 
         /** @var array<string, mixed> $config */
-        $config = config('database.connections.'.$name, []);
+        $config = Config::get('database.connections.'.$name, []);
 
         // Laravel's own switchToDatabase() branches on `url` when it is set.
         // Building a DSN from the discrete keys would then point at the

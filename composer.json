@@ -41,7 +41,8 @@
         "pestphp/pest-plugin-type-coverage": "^3.5|^4.0.0",
         "phpstan/extension-installer": "^1.4",
         "phpstan/phpstan-deprecation-rules": "^2.0",
-        "phpstan/phpstan-phpunit": "^2.0"
+        "phpstan/phpstan-phpunit": "^2.0",
+        "symfony/process": "^7.0|^8.0"
     },
     "suggest": {
         "mozex/laravel-worktree": "Per-branch Laravel Herd worktrees whose teardown also drops the worktree's lane databases"

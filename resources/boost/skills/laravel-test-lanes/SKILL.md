@@ -39,7 +39,7 @@ Each worker holds two connections: Laravel's own plus the lane's lock holder. Si
 
 ## Configuration
 
-`config/test-lanes.php`:
+`config/test-lanes.php` (publish it with `php artisan test-lanes:install`):
 
 - `enabled`: `TEST_LANES_ENABLED=false` switches the package off; runs behave as if it were absent.
 - `pool_size`: lanes per base database (default 256). One lane per concurrent process, handed out lowest-first.

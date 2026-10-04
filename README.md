@@ -94,10 +94,10 @@ There's a bonus: `Storage::fake()` also scopes its disk roots by the parallel to
 
 ## Configuration
 
-Publish the config file if you want to change the defaults:
+Run the install command if you want to change the defaults. It publishes `config/test-lanes.php`:
 
 ```bash
-php artisan vendor:publish --tag=test-lanes-config
+php artisan test-lanes:install
 ```
 
 ```php

@@ -1,3 +1,5 @@
+![Laravel Test Lanes](https://raw.githubusercontent.com/mozex/laravel-test-lanes/main/art/banner.png)
+
 # Laravel Test Lanes
 
 [![Latest Version on Packagist](https://img.shields.io/packagist/v/mozex/laravel-test-lanes.svg?style=flat-square)](https://packagist.org/packages/mozex/laravel-test-lanes)

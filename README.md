@@ -1,4 +1,4 @@
-![Laravel Test Lanes](https://raw.githubusercontent.com/mozex/laravel-test-lanes/main/art/banner.png)
+[![Laravel Test Lanes](https://raw.githubusercontent.com/mozex/laravel-test-lanes/main/art/banner.png)](https://mozex.dev/docs/laravel-test-lanes)
 
 # Laravel Test Lanes
 

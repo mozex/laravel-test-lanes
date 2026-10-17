@@ -2,6 +2,17 @@
 
 All notable changes to `laravel-test-lanes` will be documented in this file.
 
+## 1.2.1 - 2026-10-17
+
+### What's Changed
+
+* Name the test database when cleaning up: run from a shell, `test-lanes:cleanup` reads the database in `.env` and finds no lanes, so the docs now show `DB_DATABASE=app_testing php artisan test-lanes:cleanup`
+* Run `test-lanes:cleanup --connection` only while no tests run: lanes are locked under the default connection's database alone, so another connection's lane databases are dropped even while in use
+* Count every connection a worker opens when sizing `max_connections`, not just two
+* Say what lanes leave shared between concurrent runs, including a per-checkout test-impact cache such as Pest's Tia, in place of "fan out freely" in the Boost skill
+
+**Full Changelog**: https://github.com/mozex/laravel-test-lanes/compare/1.2.0...1.2.1
+
 ## 1.2.0 - 2026-10-08
 
 ### What's Changed

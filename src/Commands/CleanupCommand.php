@@ -17,7 +17,10 @@ use PDOException;
  * migrated database is the whole point. This command is for the moments reuse
  * ends: a checkout being torn down, a database rename, or reclaiming disk. A
  * lane whose lock is currently held belongs to a live test process and is
- * skipped, so running this mid-test is safe.
+ * skipped, so running this mid-test is safe for the default connection.
+ * Lanes are locked only under the default connection's base database, so
+ * another connection's lane databases have no lock of their own here: with
+ * --connection, every lane looks free and is dropped.
  */
 class CleanupCommand extends Command
 {

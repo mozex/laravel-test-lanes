@@ -5,7 +5,7 @@ description: Run concurrent Laravel test runs safely in one project using machin
 
 # Laravel Test Lanes
 
-This project has `mozex/laravel-test-lanes` installed. Every test process claims a machine-unique lane through a database advisory lock, and Laravel's parallel-testing databases become `{base}_test_lane{n}`. Concurrent test runs in this checkout never share a database, so there is nothing to assign, serialize, or coordinate by hand.
+This project has `mozex/laravel-test-lanes` installed. Every test process claims a machine-unique lane through a database advisory lock, and Laravel's parallel-testing databases become `{base}_test_lane{n}`. Concurrent test runs in this checkout never share a database, so databases need nothing assigned or coordinated by hand. Anything else a run keeps once per checkout is still shared (see the first rule below).
 
 ## When to use this skill
 
@@ -16,7 +16,11 @@ This project has `mozex/laravel-test-lanes` installed. Every test process claims
 
 ## Rules for working in a project that uses this package
 
-- **Fan out freely.** Concurrent test runs are safe at full `--parallel` speed. Do not reintroduce advice to serialize runs, reduce worker counts, or assign databases manually; the lanes make that obsolete.
+- **The lanes isolate databases, not everything.** Never serialize runs or assign databases because of the database: the lanes handle that. What they don't reach still collides between concurrent runs:
+  - a fixed temp file or port;
+  - anything keyed on paratest's `TEST_TOKEN`;
+  - a test-impact cache kept once per checkout. Pest's Tia deletes its worker partials when a parallel run starts and collects whatever is there when it ends, so overlapping runs can lose or take each other's results. Trust a result from a run nothing overlapped, or rerun without the cache.
+  - the database server's connection limit (see Connection budget).
 - **Never hardcode a parallel token or database suffix.** The lane is claimed at runtime; anything keyed on paratest's raw `TEST_TOKEN` or a fixed path is still shared between runs and needs its own scoping.
 - **The package registers itself; do not add wiring.** The service provider calls `TestLanes::register()` during app boot whenever `APP_ENV=testing` (Laravel's phpunit.xml default). Only a suite running under a different environment name needs the manual form, in the base `TestCase`'s `createApplication()` after `parent::createApplication()` — never in `Pest.php`, where no container exists yet and the `ParallelTesting` facade throws "A facade root has not been set".
 - **Serial runs are covered on purpose.** Registration forces `LARAVEL_PARALLEL_TESTING` so plain `php artisan test` gets a lane database too. Do not "clean up" that flag; without it every serial run shares the base database.
@@ -25,17 +29,22 @@ This project has `mozex/laravel-test-lanes` installed. Every test process claims
 
 ## Cleaning up lane databases
 
-When a checkout is being torn down or a database renamed:
+When a checkout is being torn down or a database renamed. The command takes the base database from the connection as the current environment configures it. Run from a shell, that's `.env`'s database rather than the test database `phpunit.xml` sets, and a bare run finds no lanes. So name the test database, with `app_testing` standing for the `DB_DATABASE` in `phpunit.xml`:
 
 ```bash
-php artisan test-lanes:cleanup
+DB_DATABASE=app_testing php artisan test-lanes:cleanup
 ```
 
-Only databases whose lane lock is free are dropped; a lane claimed by a live run is kept and reported, so the command is safe mid-test. `--connection=name` targets a non-default connection.
+Only databases whose lane lock is free are dropped. A lane claimed by a live run is kept and reported, so cleaning the default connection mid-test is safe.
+
+`--connection=name` targets another connection, but lanes are locked only under the default connection's base database. A second database the suite switches with the same token has no lock of its own, so cleaning it through `--connection` drops lanes in use. Run that only while no tests are running.
 
 ## Connection budget
 
-Each worker holds two connections: Laravel's own plus the lane's lock holder. Size the server as `max_connections >= 2 x (workers x concurrent runs) + headroom`. Under connection starvation Laravel misreads the failure as a missing database and tries to drop it, so raise `max_connections` rather than retrying.
+- **Per worker:** each worker holds at least two connections, Laravel's own plus the lane's lock holder. Every other connection its tests open (a second database, a database-backed cache or queue) adds one more. When the count isn't obvious, read the server's peak during a full run: `Threads_connected` on MySQL, `pg_stat_activity` on Postgres.
+- **How many workers:** Pest starts one process per core by default, and the database server may serve other projects' test runs at the same time.
+- **Sizing:** `max_connections >= connections per worker x (workers x concurrent runs) + headroom`, or cap a run with `--processes`.
+- **When it runs out:** Laravel misreads connection starvation as a missing database and tries to drop it, so raise the limit rather than retrying.
 
 ## Configuration
 

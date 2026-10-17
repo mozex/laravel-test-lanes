@@ -125,28 +125,34 @@ To support another database driver, implement the `Mozex\TestLanes\Locks\Advisor
 Lane databases are kept on purpose: reusing a migrated database is the whole point. When reuse ends, because you're tearing down a checkout or renaming a database, drop them all at once:
 
 ```bash
-php artisan test-lanes:cleanup
+DB_DATABASE=app_testing php artisan test-lanes:cleanup
 ```
 
-The command only drops databases whose lane lock is currently free. A lane claimed by a live test run is kept and reported, so running cleanup mid-test is safe. Pass `--connection=name` to clean a connection other than the default.
+Here `app_testing` stands for the `DB_DATABASE` your `phpunit.xml` sets. The command takes the base database from the connection as the current environment configures it. Run from a shell, that's the database in `.env`, so without the variable it looks for lanes of your development database and finds none.
+
+The command only drops databases whose lane lock is currently free. A lane claimed by a live test run is kept and reported, so cleaning the default connection mid-test is safe.
+
+Pass `--connection=name` to clean another connection's lanes, and run it only while no tests are running. Lanes are locked under the default connection's base database alone, so a second database your suite switches with the same token has no lock to check, and cleanup drops its lanes even when a live run is using them.
 
 If you work on per-branch git worktrees through [mozex/laravel-worktree](https://github.com/mozex/laravel-worktree), there's nothing to run there: its `worktree:teardown` drops a worktree's lane databases on its own.
 
 ## Sizing the Connection Budget
 
-Each test worker holds two database connections: Laravel's own (to the lane database) and the lock holder (to the base database). A 24-worker run costs about 50 connections, and two of those at once will blow through a stock Postgres `max_connections = 100`.
+Each test worker holds at least two database connections: Laravel's own (to the lane database) and the lock holder (to the base database). Every other connection your tests open adds one more per worker, such as a second database or a database-backed cache or queue. When you're not sure of the count, read the server's peak during a full run: `Threads_connected` on MySQL, `pg_stat_activity` on Postgres. A 24-worker run at two per worker costs about 50 connections, and two of those at once will blow through a stock Postgres `max_connections = 100`.
 
-That failure is not clean, either. Under connection starvation Laravel misreads "too many clients" as "the database is missing" and tries to drop it. Size the server before you need it:
+That failure is not clean, either. Under connection starvation Laravel misreads "too many clients" as "the database is missing" and tries to drop it. Size the server before you need it, counting every project whose tests share it:
 
 ```
-max_connections >= 2 x (workers x concurrent runs) + headroom
+max_connections >= connections per worker x (workers x concurrent runs) + headroom
 ```
 
-For example: up to 3 concurrent 24-worker runs wants `max_connections` of at least 150, so 200 is a comfortable setting.
+For example: up to 3 concurrent 24-worker runs at two connections per worker wants `max_connections` of at least 150, so 200 is a comfortable setting. When the server can't grow, cap a run with `--processes`.
 
 ## What Is Not Isolated
 
 The lane claim scopes **databases** (and `Storage::fake()` roots). It cannot reach things your suite keys on a fixed path or on paratest's raw `TEST_TOKEN`, such as a hardcoded port or a shared temp file. Those still collide between concurrent runs and need their own per-run scoping.
+
+The same goes for a test-impact cache kept once per checkout. Pest's Tia deletes its worker partials when a parallel run starts and collects whatever is there when it ends, so two overlapping runs can lose or take each other's results. Trust a result from a run nothing overlapped, or rerun without the cache.
 
 A few more things worth knowing:
 

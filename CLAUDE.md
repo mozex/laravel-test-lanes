@@ -26,7 +26,7 @@ composer test:unit             # Run Pest tests
 
 - `src/TestLanes.php` - the whole claim lifecycle as a static class (state is inherently process-global: one lane, one holder connection per process). The provider calls `register()` automatically when tests run; `claim()` is invoked lazily through the token resolver.
 - `src/Locks/` - `AdvisoryLock` interface (`connect`, `tryAcquire`, `release`) with Postgres (`pg_try_advisory_lock`) and MySQL (`GET_LOCK`) implementations. MariaDB reuses the MySQL class. The config `locks` map is the extension point for new drivers.
-- `src/Commands/CleanupCommand.php` - drops `{base}_test_lane{n}` databases whose lock is free; claimed lanes are skipped, so it is safe mid-run.
+- `src/Commands/CleanupCommand.php` - drops `{base}_test_lane{n}` databases whose lock is free; claimed lanes are skipped, so it is safe mid-run on the default connection. Lanes are locked only under the default connection's base database, so `--connection` on a second database sees every lane as free (documented, not patched). Run from a shell it reads `.env`'s database, so the docs name the test database with `DB_DATABASE=`.
 - `src/TestLanesServiceProvider.php` - spatie package-tools plus a deep config re-merge (Laravel's publish merge is shallow; without the re-merge a published config would freeze the `locks` map and lose drivers we add later), and spatie's `test-lanes:install`, which publishes the config and then asks for a GitHub star.
 
 ## Key design decisions
